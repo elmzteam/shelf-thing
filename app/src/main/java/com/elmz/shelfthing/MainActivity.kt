@@ -1,6 +1,9 @@
 package com.elmz.shelfthing
 
+import android.media.ImageReader.OnImageAvailableListener
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
@@ -10,6 +13,7 @@ import com.elmz.shelfthing.fragment.HomeFragment
 import com.elmz.shelfthing.fragment.SettingsFragment
 import com.elmz.shelfthing.fragment.StatusFragment
 import com.elmz.shelfthing.util.Api
+import com.elmz.shelfthing.util.Camera
 import com.elmz.shelfthing.util.DrawerActivity
 import com.elmz.shelfthing.util.EnumUtil
 import okhttp3.MediaType
@@ -53,6 +57,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	// Other things
 	private var mActiveDisplay: Display? = null
 	private var mApi: Api? = null
+	private lateinit var mCameraHandler: Handler
+	private lateinit var mCameraThread: HandlerThread
+	private lateinit var mCamera: Camera
 
 	// Injected components
 	@Inject
@@ -77,6 +84,12 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			setDrawerIndicatorEnabled(count == 0)
 		}
 
+		mCameraThread = HandlerThread("CameraBackground")
+		mCameraThread.start()
+		mCameraHandler = Handler(mCameraThread.looper)
+		mCamera = Camera()
+		mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener)
+
 		// Restore previous state or default
 		if (savedInstanceState == null) {
 			switchToFragment(Display.HOME)
@@ -85,6 +98,12 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			mSettingsFragment = mFragmentManager.getFragment(savedInstanceState, Display.SETTINGS.name) as SettingsFragment
 			switchToFragment(mActiveDisplay!!)
 		}
+	}
+
+	override fun onDestroy() {
+		super.onDestroy()
+		mCameraThread.quitSafely()
+		mCamera.shutDown()
 	}
 
 	override fun onSaveInstanceState(savedInstanceState: Bundle) {
@@ -215,5 +234,23 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 
 	override fun onClickBack() {
 		switchToFragment(Display.HOME)
+	}
+
+	// Callback to receive captured camera image data
+	private val mOnImageAvailableListener = OnImageAvailableListener { reader ->
+		// Get the raw image bytes
+		val image = reader.acquireLatestImage()
+		val imageBuf = image.getPlanes()[0].getBuffer()
+		val imageBytes = ByteArray(imageBuf.remaining())
+		imageBuf.get(imageBytes)
+		image.close()
+
+		onPictureTaken(imageBytes)
+	}
+
+	private fun onPictureTaken(imageBytes: ByteArray?) {
+		if (imageBytes != null) {
+			// ...process the captured image...
+		}
 	}
 }
