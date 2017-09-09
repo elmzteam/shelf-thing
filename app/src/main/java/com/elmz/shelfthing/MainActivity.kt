@@ -23,6 +23,9 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import timber.log.Timber
 import java.io.File
@@ -61,7 +64,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 
 	// Other things
 	private var mActiveDisplay: Display? = null
-	private var mApi: Api? = null
+	private lateinit var mApi: Api
 	private var mCameraHandler: Handler? = null
 	private var mCameraThread: HandlerThread? = null
 	private var mCamera: Camera? = null
@@ -289,6 +292,18 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		if (imageBytes != null) {
 			// ...process the captured image...
 			Timber.i("taken")
+			val requestBody = RequestBody.create(MediaType.parse("application/octet-stream"), imageBytes)
+			val body = MultipartBody.Part.create(requestBody)
+			val fileList: List<MultipartBody.Part> = listOf(body)
+			mApi.upload(fileList).enqueue(object : Callback<String> {
+				override fun onResponse(call: Call<String>?, response: Response<String>?) {
+					Timber.d("response received")
+				}
+
+				override fun onFailure(call: Call<String>?, t: Throwable?) {
+					Timber.e("response failed")
+				}
+			})
 		}
 	}
 }
