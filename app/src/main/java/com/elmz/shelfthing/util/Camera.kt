@@ -80,7 +80,7 @@ internal class Camera {
 			val captureBuilder = mCameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE) ?: return
 			captureBuilder.addTarget(mImageReader?.surface)
 			captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-			Timber.d("Session initialized.")
+			Timber.d("Session initialized: %s", mCaptureSession != null)
 			mCaptureSession?.capture(captureBuilder.build(), mCaptureCallback, null)
 		} catch (cae: CameraAccessException) {
 			Timber.d("camera capture exception")
@@ -121,6 +121,7 @@ internal class Camera {
 			Timber.v("Session configured")
 			// The camera is already closed
 			if (mCameraDevice == null) {
+				Timber.d("Camera closed")
 				return
 			}
 
