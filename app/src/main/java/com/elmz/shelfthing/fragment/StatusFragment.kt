@@ -1,7 +1,6 @@
 package com.elmz.shelfthing.fragment
 
 import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -40,10 +39,8 @@ class StatusFragment : Fragment() {
 	}
 
 	// TODO: Rename method, update argument and hook method into UI event
-	fun onButtonPressed(s: String) {
-		if (mListener != null) {
-			mListener!!.onFragmentInteraction(s)
-		}
+	fun onClickBack() {
+		mListener?.onClickBack()
 	}
 
 	override fun onAttach(context: Context) {
@@ -70,8 +67,7 @@ class StatusFragment : Fragment() {
 	 * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
 	 */
 	interface OnFragmentInteractionListener {
-		// TODO: Update argument type and name
-		fun onFragmentInteraction(s: String)
+		fun onClickBack()
 	}
 
 	companion object {

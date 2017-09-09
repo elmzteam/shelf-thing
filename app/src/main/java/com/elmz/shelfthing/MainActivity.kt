@@ -1,11 +1,9 @@
 package com.elmz.shelfthing
 
 import android.os.Bundle
-import android.support.design.widget.AppBarLayout
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
-import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import com.elmz.shelfthing.fragment.HomeFragment
@@ -14,7 +12,6 @@ import com.elmz.shelfthing.fragment.StatusFragment
 import com.elmz.shelfthing.util.Api
 import com.elmz.shelfthing.util.DrawerActivity
 import com.elmz.shelfthing.util.EnumUtil
-import com.elmz.shelfthing.util.TabFragment
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -53,6 +50,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private var mStatusFragment: StatusFragment? = null
 	private var mSettingsFragment: SettingsFragment? = null
 
+	// Other things
 	private var mActiveDisplay: Display? = null
 	private var mApi: Api? = null
 
@@ -73,6 +71,11 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		mFragmentManager = supportFragmentManager
 		(application as App).netComponent.inject(this)
 		mApi = mRetrofit.create(Api::class.java)
+
+		mFragmentManager.addOnBackStackChangedListener {
+			val count = mFragmentManager.backStackEntryCount
+			setDrawerIndicatorEnabled(count == 0)
+		}
 
 		// Restore previous state or default
 		if (savedInstanceState == null) {
@@ -114,6 +117,28 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		return super.onNavigationItemSelected(item)
 	}
 
+	override fun onBackPressed() {
+		val stackSize = mFragmentManager.backStackEntryCount
+		super.onBackPressed()
+		// Change display if stack was popped
+		if (mFragmentManager.backStackEntryCount < stackSize) {
+			onBackStackPopped()
+		}
+	}
+
+	override fun popBackStack(): Boolean {
+		if (super.popBackStack()) {
+			onBackStackPopped()
+			return true
+		}
+		return false
+	}
+
+	private fun onBackStackPopped() {
+		val fragment = mFragmentManager.findFragmentById(R.id.container)
+		switchToDisplay(Display.valueOf(fragment.tag))
+	}
+
 	private fun switchToFragment(display: Display) {
 		when (display) {
 			Display.HOME -> {
@@ -149,28 +174,23 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private fun switchToDisplay(display: Display) {
 		mActiveDisplay = display
 		invalidateOptionsMenu()
-		val toolbar = findViewById<Toolbar>(R.id.toolbar)
-		val params = toolbar.layoutParams as AppBarLayout.LayoutParams
-		var fragment: TabFragment? = null
-		params.scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP
+//		val toolbar = findViewById<Toolbar>(R.id.toolbar)
+//		val params = toolbar.layoutParams as AppBarLayout.LayoutParams
+//		var fragment: TabFragment? = null
+//		params.scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP
 		var expandedToolbar = false
 		when (display) {
 			Display.HOME -> {
-				expandedToolbar = true
 				title = resources.getString(R.string.title_home)
 			}
 			Display.STATUS -> {
-				params.scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL or
-						AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS or
-						AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP
-				expandedToolbar = true
 				title = resources.getString(R.string.title_status)
 			}
 			Display.SETTINGS -> title = resources.getString(R.string.title_settings)
 		}
-		findViewById<AppBarLayout>(R.id.appbar).setExpanded(expandedToolbar)
-		toolbar.layoutParams = params
-		prepareTabLayout(fragment)
+//		findViewById<AppBarLayout>(R.id.appbar).setExpanded(expandedToolbar)
+//		toolbar.layoutParams = params
+//		prepareTabLayout(fragment)
 	}
 
 	fun sendImage(filePath: String) {
@@ -189,6 +209,11 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		if (BuildConfig.DEBUG) t.printStackTrace()
 	}
 
-	override fun onFragmentInteraction(s: String) {
+	override fun onClickInfo() {
+		switchToFragment(Display.STATUS)
+	}
+
+	override fun onClickBack() {
+		switchToFragment(Display.HOME)
 	}
 }

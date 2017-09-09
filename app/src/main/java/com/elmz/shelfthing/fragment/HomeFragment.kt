@@ -6,6 +6,10 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import butterknife.BindView
+import butterknife.ButterKnife
+import butterknife.Unbinder
 import com.elmz.shelfthing.R
 
 /**
@@ -18,83 +22,94 @@ import com.elmz.shelfthing.R
  */
 class HomeFragment : Fragment() {
 
-    // TODO: Rename and change types of parameters
-    private var mParam1: String? = null
-    private var mParam2: String? = null
+	// TODO: Rename and change types of parameters
+	private var mParam1: String? = null
+	private var mParam2: String? = null
 
-    private var mListener: OnFragmentInteractionListener? = null
+	private var mListener: OnFragmentInteractionListener? = null
+	private var mUnbinder: Unbinder? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        if (arguments != null) {
-            mParam1 = arguments.getString(ARG_PARAM1)
-            mParam2 = arguments.getString(ARG_PARAM2)
-        }
-    }
+	@BindView(R.id.header) var mHeader: TextView? = null
+	@BindView(R.id.header_card) var mHeaderCard: TextView? = null
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
-        // Inflate the layout for this fragment
-        return inflater?.inflate(R.layout.fragment_home, container, false)
-    }
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		if (arguments != null) {
+			mParam1 = arguments.getString(ARG_PARAM1)
+			mParam2 = arguments.getString(ARG_PARAM2)
+		}
+	}
 
-    // TODO: Rename method, update argument and hook method into UI event
-    fun onButtonPressed(s: String) {
-        if (mListener != null) {
-            mListener!!.onFragmentInteraction(s)
-        }
-    }
+	override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
+							  savedInstanceState: Bundle?): View? {
+		// Inflate the layout for this fragment
+		val rootView = inflater?.inflate(R.layout.fragment_home, container, false) ?: return null
+		mUnbinder = ButterKnife.bind(this, rootView)
+		mHeaderCard?.setOnClickListener { _ -> onClickInfo() }
+		return rootView
+	}
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            mListener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
-        }
-    }
+	override fun onDestroyView() {
+		super.onDestroyView()
+		mUnbinder?.unbind()
+		mUnbinder = null
+	}
 
-    override fun onDetach() {
-        super.onDetach()
-        mListener = null
-    }
+	// TODO: Rename method, update argument and hook method into UI event
+	fun onClickInfo() {
+		mListener?.onClickInfo()
+	}
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
-     */
-    interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        fun onFragmentInteraction(s: String)
-    }
+	override fun onAttach(context: Context) {
+		super.onAttach(context)
+		if (context is OnFragmentInteractionListener) {
+			mListener = context
+		} else {
+			throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+		}
+	}
 
-    companion object {
-        // TODO: Rename parameter arguments, choose names that match
-        // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-        private val ARG_PARAM1 = "param1"
-        private val ARG_PARAM2 = "param2"
+	override fun onDetach() {
+		super.onDetach()
+		mListener = null
+	}
 
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment HomeFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        fun newInstance(param1: String, param2: String): HomeFragment {
-            val fragment = HomeFragment()
-            val args = Bundle()
-            args.putString(ARG_PARAM1, param1)
-            args.putString(ARG_PARAM2, param2)
-            fragment.arguments = args
-            return fragment
-        }
-    }
+	/**
+	 * This interface must be implemented by activities that contain this
+	 * fragment to allow an interaction in this fragment to be communicated
+	 * to the activity and potentially other fragments contained in that
+	 * activity.
+	 *
+	 *
+	 * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
+	 */
+	interface OnFragmentInteractionListener {
+		// TODO: Update argument type and name
+		fun onClickInfo()
+	}
+
+	companion object {
+		// TODO: Rename parameter arguments, choose names that match
+		// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+		private val ARG_PARAM1 = "param1"
+		private val ARG_PARAM2 = "param2"
+
+		/**
+		 * Use this factory method to create a new instance of
+		 * this fragment using the provided parameters.
+		 *
+		 * @param param1 Parameter 1.
+		 * @param param2 Parameter 2.
+		 * @return A new instance of fragment HomeFragment.
+		 */
+		// TODO: Rename and change types and number of parameters
+		fun newInstance(param1: String, param2: String): HomeFragment {
+			val fragment = HomeFragment()
+			val args = Bundle()
+			args.putString(ARG_PARAM1, param1)
+			args.putString(ARG_PARAM2, param2)
+			fragment.arguments = args
+			return fragment
+		}
+	}
 }// Required empty public constructor
