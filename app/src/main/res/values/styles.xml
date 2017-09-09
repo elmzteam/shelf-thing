@@ -1,0 +1,38 @@
+<resources>
+
+	<!-- Base application theme. -->
+	<style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+		<item name="colorPrimary">@color/primary</item>
+		<item name="colorPrimaryDark">@color/primary_dark</item>
+		<item name="colorAccent">@color/accent_400</item>
+		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+		<item name="android:windowNoTitle">true</item>
+		<item name="android:windowActionModeOverlay">true</item>
+		<item name="android:windowActivityTransitions">true</item>
+		<item name="android:windowContentTransitions">true</item>
+	</style>
+
+	<!-- Dark application theme. -->
+	<style name="AppThemeDark" parent="Theme.AppCompat.NoActionBar">
+		<item name="colorPrimary">@color/primary</item>
+		<item name="colorPrimaryDark">@color/primary_dark</item>
+		<item name="colorAccent">@color/accent_400</item>
+		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+		<item name="android:windowNoTitle">true</item>
+		<item name="android:windowActionModeOverlay">true</item>
+		<item name="android:windowActivityTransitions">true</item>
+		<item name="android:windowContentTransitions">true</item>
+	</style>
+
+	<!-- Style for an Preference Entry -->
+	<style name="AppPreference">
+		<item name="android:layout">@layout/preference_material</item>
+	</style>
+
+	<!-- Style for a DialogPreference Entry -->
+	<style name="AppPreference.DialogPreference">
+		<item name="positiveButtonText">@android:string/ok</item>
+		<item name="negativeButtonText">@android:string/cancel</item>
+	</style>
+
+</resources>

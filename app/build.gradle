@@ -1,0 +1,84 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.1"
+    defaultConfig {
+        applicationId "com.elmz.shelfthing"
+        minSdkVersion 26
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    compileOnly 'com.google.android.things:androidthings:+'
+    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+
+	// compat
+    compile 'com.android.support:appcompat-v7:26.0.2'
+    compile 'com.android.support:support-v4:26.0.2'
+    compile 'com.android.support:cardview-v7:26.0.2'
+    compile 'com.android.support:recyclerview-v7:26.0.2'
+    compile 'com.android.support:preference-v7:26.0.2'
+    compile 'com.android.support:preference-v14:26.0.2'
+    compile 'com.android.support:design:26.0.2'
+
+	// Timber
+	// https://mvnrepository.com/artifact/com.jakewharton.timber/timber
+	compile 'com.jakewharton.timber:timber:4.5.1'
+
+	// Butterknife
+	// https://mvnrepository.com/artifact/com.jakewharton/butterknife
+	compile 'com.jakewharton:butterknife:8.8.1'
+	annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+
+	// Dagger 2
+	// https://mvnrepository.com/artifact/com.google.dagger/dagger
+	compile 'com.google.dagger:dagger:2.11'
+	annotationProcessor 'com.google.dagger:dagger-compiler:2.11'
+	provided 'javax.annotation:jsr250-api:1.0'
+
+	// OkHttp
+	// http://square.github.io/okhttp#download
+	compile 'com.squareup.okhttp3:okhttp:3.8.1'
+
+	// Retrofit/moshi
+	// https://github.com/square/moshi/releases
+	compile 'com.squareup.moshi:moshi:1.5.0'
+	// http://square.github.io/retrofit#download
+	compile 'com.squareup.retrofit2:retrofit:2.3.0'
+	compile 'com.squareup.retrofit2:converter-moshi:2.3.0'
+
+	// Icepick
+	// https://clojars.org/frankiesardo/icepick
+	compile 'frankiesardo:icepick:3.2.0'
+	annotationProcessor 'frankiesardo:icepick-processor:3.2.0'
+
+	// Autovalue
+	// https://mvnrepository.com/artifact/com.google.auto.value/auto-value
+	provided 'com.google.auto.value:auto-value:1.5'
+	annotationProcessor 'com.google.auto.value:auto-value:1.5'
+	// https://github.com/rharter/auto-value-parcel/releases
+	annotationProcessor 'com.ryanharter.auto.value:auto-value-parcel:0.2.5'
+	// https://github.com/rharter/auto-value-moshi/releases
+	provided 'com.ryanharter.auto.value:auto-value-moshi-annotations:0.4.3'
+	annotationProcessor 'com.ryanharter.auto.value:auto-value-moshi:0.4.3'
+}
