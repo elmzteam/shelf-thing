@@ -6,11 +6,8 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
-import butterknife.BindView
-import butterknife.ButterKnife
-import butterknife.Unbinder
 import com.elmz.shelfthing.R
+import kotlinx.android.synthetic.main.fragment_home.*
 
 /**
  * A simple [Fragment] subclass.
@@ -27,10 +24,6 @@ class HomeFragment : Fragment() {
 	private var mParam2: String? = null
 
 	private var mListener: OnFragmentInteractionListener? = null
-	private var mUnbinder: Unbinder? = null
-
-	@BindView(R.id.header) var mHeader: TextView? = null
-	@BindView(R.id.header_card) var mHeaderCard: TextView? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -43,21 +36,20 @@ class HomeFragment : Fragment() {
 	override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
 							  savedInstanceState: Bundle?): View? {
 		// Inflate the layout for this fragment
-		val rootView = inflater?.inflate(R.layout.fragment_home, container, false) ?: return null
-		mUnbinder = ButterKnife.bind(this, rootView)
-		mHeaderCard?.setOnClickListener { _ -> onClickInfo() }
-		return rootView
+		return inflater?.inflate(R.layout.fragment_home, container, false)
 	}
 
-	override fun onDestroyView() {
-		super.onDestroyView()
-		mUnbinder?.unbind()
-		mUnbinder = null
+	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+		header_card.setOnClickListener { _ -> onClickInfo() }
+		right_card.setOnClickListener { _ -> onClickSettings() }
 	}
 
-	// TODO: Rename method, update argument and hook method into UI event
 	fun onClickInfo() {
 		mListener?.onClickInfo()
+	}
+
+	fun onClickSettings() {
+		mListener?.onClickSettings()
 	}
 
 	override fun onAttach(context: Context) {
@@ -84,8 +76,8 @@ class HomeFragment : Fragment() {
 	 * See the Android Training lesson [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html) for more information.
 	 */
 	interface OnFragmentInteractionListener {
-		// TODO: Update argument type and name
 		fun onClickInfo()
+		fun onClickSettings()
 	}
 
 	companion object {

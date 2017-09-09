@@ -1,5 +1,7 @@
 package com.elmz.shelfthing
 
+import android.Manifest.permission.*
+import android.content.pm.PackageManager
 import android.media.ImageReader.OnImageAvailableListener
 import android.os.Bundle
 import android.os.Handler
@@ -9,6 +11,7 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import com.elmz.shelfthing.fragment.HomeFragment
 import com.elmz.shelfthing.fragment.SettingsFragment
 import com.elmz.shelfthing.fragment.StatusFragment
@@ -21,6 +24,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import retrofit2.Retrofit
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
@@ -46,6 +50,7 @@ import javax.inject.Inject
  */
 class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListener,
 		StatusFragment.OnFragmentInteractionListener {
+	private val PERMISSION_REQUEST_CODE = 12
 	private lateinit var mInputMethodManager: InputMethodManager
 	private lateinit var mFragmentManager: FragmentManager
 
@@ -57,9 +62,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	// Other things
 	private var mActiveDisplay: Display? = null
 	private var mApi: Api? = null
-	private lateinit var mCameraHandler: Handler
-	private lateinit var mCameraThread: HandlerThread
-	private lateinit var mCamera: Camera
+	private var mCameraHandler: Handler? = null
+	private var mCameraThread: HandlerThread? = null
+	private var mCamera: Camera? = null
 
 	// Injected components
 	@Inject
@@ -84,11 +89,15 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			setDrawerIndicatorEnabled(count == 0)
 		}
 
-		mCameraThread = HandlerThread("CameraBackground")
-		mCameraThread.start()
-		mCameraHandler = Handler(mCameraThread.looper)
-		mCamera = Camera()
-		mCamera.initializeCamera(this, mCameraHandler, mOnImageAvailableListener)
+		if (hasPermission()) {
+			mCameraThread = HandlerThread("CameraBackground")
+			mCameraThread!!.start()
+			mCameraHandler = Handler(mCameraThread!!.looper)
+			mCamera = Camera()
+			mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+		} else {
+			requestPermission()
+		}
 
 		// Restore previous state or default
 		if (savedInstanceState == null) {
@@ -102,8 +111,8 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 
 	override fun onDestroy() {
 		super.onDestroy()
-		mCameraThread.quitSafely()
-		mCamera.shutDown()
+		mCameraThread?.quitSafely()
+		mCamera?.shutDown()
 	}
 
 	override fun onSaveInstanceState(savedInstanceState: Bundle) {
@@ -193,23 +202,11 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private fun switchToDisplay(display: Display) {
 		mActiveDisplay = display
 		invalidateOptionsMenu()
-//		val toolbar = findViewById<Toolbar>(R.id.toolbar)
-//		val params = toolbar.layoutParams as AppBarLayout.LayoutParams
-//		var fragment: TabFragment? = null
-//		params.scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP
-		var expandedToolbar = false
-		when (display) {
-			Display.HOME -> {
-				title = resources.getString(R.string.title_home)
-			}
-			Display.STATUS -> {
-				title = resources.getString(R.string.title_status)
-			}
-			Display.SETTINGS -> title = resources.getString(R.string.title_settings)
+		title = when (display) {
+			Display.HOME -> resources.getString(R.string.title_home)
+			Display.STATUS -> resources.getString(R.string.title_status)
+			Display.SETTINGS -> resources.getString(R.string.title_settings)
 		}
-//		findViewById<AppBarLayout>(R.id.appbar).setExpanded(expandedToolbar)
-//		toolbar.layoutParams = params
-//		prepareTabLayout(fragment)
 	}
 
 	fun sendImage(filePath: String) {
@@ -222,6 +219,42 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 //        mApi.postImage()
 	}
 
+	private fun hasPermission(): Boolean {
+		return checkSelfPermission(CAMERA) == PackageManager.PERMISSION_GRANTED
+				&& checkSelfPermission(INTERNET) == PackageManager.PERMISSION_GRANTED
+				&& checkSelfPermission(ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED
+	}
+
+	private fun requestPermission() {
+		if (shouldShowRequestPermissionRationale(CAMERA)
+				|| shouldShowRequestPermissionRationale(INTERNET)
+				|| shouldShowRequestPermissionRationale(ACCESS_NETWORK_STATE)) {
+			Toast.makeText(this, "Camera and internet connectivity are " +
+					"required for this application", Toast.LENGTH_LONG).show()
+		}
+		requestPermissions(arrayOf(CAMERA, INTERNET, ACCESS_NETWORK_STATE), PERMISSION_REQUEST_CODE)
+	}
+
+	override fun onRequestPermissionsResult(requestCode: Int,
+	                                        permissions: Array<String>, grantResults: IntArray) {
+		when (requestCode) {
+			PERMISSION_REQUEST_CODE -> {
+				// If request is cancelled, the result arrays are empty.
+				if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+					mCameraThread = HandlerThread("CameraBackground")
+					mCameraThread!!.start()
+					mCameraHandler = Handler(mCameraThread!!.looper)
+					mCamera = Camera()
+					mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+				} else {
+					// permission denied, boo! Disable the
+					// functionality that depends on this permission.
+					mCamera = null
+				}
+			}
+		}
+	}
+
 	private fun handleApiFailure(t: Throwable) {
 		val message = t.message ?: "Could not connect"
 		Snackbar.make(findViewById(R.id.container), message, Snackbar.LENGTH_LONG).show()
@@ -232,6 +265,10 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		switchToFragment(Display.STATUS)
 	}
 
+	override fun onClickSettings() {
+		mCamera?.takePicture()
+	}
+
 	override fun onClickBack() {
 		switchToFragment(Display.HOME)
 	}
@@ -240,7 +277,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private val mOnImageAvailableListener = OnImageAvailableListener { reader ->
 		// Get the raw image bytes
 		val image = reader.acquireLatestImage()
-		val imageBuf = image.getPlanes()[0].getBuffer()
+		val imageBuf = image.planes[0].buffer
 		val imageBytes = ByteArray(imageBuf.remaining())
 		imageBuf.get(imageBytes)
 		image.close()
@@ -251,6 +288,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private fun onPictureTaken(imageBytes: ByteArray?) {
 		if (imageBytes != null) {
 			// ...process the captured image...
+			Timber.i("taken")
 		}
 	}
 }

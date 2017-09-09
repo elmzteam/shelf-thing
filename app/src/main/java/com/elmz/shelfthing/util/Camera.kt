@@ -28,15 +28,15 @@ internal class Camera {
 		try {
 			camIds = manager.cameraIdList
 		} catch (e: CameraAccessException) {
-			Timber.d("Cam access exception getting IDs", e)
+			Timber.e("Cam access exception getting IDs", e)
 		}
 
 		if (camIds.isEmpty()) {
-			Timber.d("No cameras found")
+			Timber.d("No cameras found!")
 			return
 		}
 		val id = camIds[0]
-		Timber.d("Using camera id " + id)
+		Timber.d("Using camera id %s", id)
 
 		// Initialize image processor
 		mImageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT,
@@ -47,7 +47,7 @@ internal class Camera {
 		try {
 			manager.openCamera(id, mStateCallback, backgroundHandler)
 		} catch (cae: CameraAccessException) {
-			Timber.d("Camera access exception", cae)
+			Timber.e("Camera access exception", cae)
 		}
 
 	}
@@ -65,6 +65,7 @@ internal class Camera {
 
 		// Here, we create a CameraCaptureSession for capturing still images.
 		try {
+			Timber.v("Creating capture session")
 			mCameraDevice?.createCaptureSession(
 					Collections.singletonList(mImageReader?.surface),
 					mSessionCallback, null)
@@ -90,6 +91,7 @@ internal class Camera {
 	private val mStateCallback = object : CameraDevice.StateCallback() {
 		override fun onOpened(cameraDevice: CameraDevice?) {
 			mCameraDevice = cameraDevice
+			Timber.d("Camera initialized: %s", cameraDevice != null)
 		}
 
 		override fun onDisconnected(cameraDevice: CameraDevice?) {
@@ -108,7 +110,7 @@ internal class Camera {
 			if (session != null) {
 				session.close()
 				mCaptureSession = null
-				Timber.d("CaptureSession closed")
+				Timber.v("CaptureSession closed")
 			}
 		}
 	}
@@ -116,6 +118,7 @@ internal class Camera {
 	// Callback handling session state changes
 	private val mSessionCallback = object : CameraCaptureSession.StateCallback() {
 		override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
+			Timber.v("Session configured")
 			// The camera is already closed
 			if (mCameraDevice == null) {
 				return
@@ -123,6 +126,7 @@ internal class Camera {
 
 			// When the session is ready, we start capture.
 			mCaptureSession = cameraCaptureSession
+			Timber.v("Triggering image capture")
 			triggerImageCapture()
 		}
 
@@ -133,8 +137,9 @@ internal class Camera {
 
 	companion object {
 		// Camera image parameters (device-specific)
-		private val IMAGE_WIDTH = 0
-		private val IMAGE_HEIGHT = 0
-		private val MAX_IMAGES = 0
+		private val IMAGE_WIDTH = 2560
+		private val IMAGE_HEIGHT = 1920
+		// TODO: Not sure
+		private val MAX_IMAGES = 1
 	}
 }
