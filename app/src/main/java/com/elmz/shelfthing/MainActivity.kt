@@ -68,6 +68,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private var mCameraHandler: Handler? = null
 	private var mCameraThread: HandlerThread? = null
 	private var mCamera: Camera? = null
+	private var mMissingProducts: List<String> = emptyList()
 
 	// Injected components
 	@Inject
@@ -174,7 +175,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		when (display) {
 			Display.HOME -> {
 				if (mHomeFragment == null) {
-					mHomeFragment = HomeFragment.newInstance("", "")
+					mHomeFragment = HomeFragment.newInstance()
 				}
 				mFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
 				mFragmentManager.beginTransaction()
@@ -183,7 +184,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			}
 			Display.STATUS -> {
 				if (mStatusFragment == null) {
-					mStatusFragment = StatusFragment.newInstance("", "")
+					mStatusFragment = StatusFragment.newInstance(mMissingProducts as ArrayList<String>)
 				}
 				mFragmentManager.beginTransaction()
 						.replace(R.id.container, mStatusFragment, display.name)
@@ -260,8 +261,13 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 
 	private fun handleApiFailure(t: Throwable) {
 		val message = t.message ?: "Could not connect"
-		Snackbar.make(findViewById(R.id.container), message, Snackbar.LENGTH_LONG).show()
+		makeSnackbar(message, Snackbar.LENGTH_LONG)
 		if (BuildConfig.DEBUG) t.printStackTrace()
+	}
+
+	private fun makeSnackbar(message: String, length: Int) {
+		// container is defined in each fragment
+		Snackbar.make(findViewById(R.id.container), message, length).show()
 	}
 
 	override fun onClickInfo() {
@@ -293,15 +299,17 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			// ...process the captured image...
 			Timber.i("taken")
 			val requestBody = RequestBody.create(MediaType.parse("application/octet-stream"), imageBytes)
-			val body = MultipartBody.Part.create(requestBody)
+			val body = MultipartBody.Part.createFormData("pantry", "test", requestBody)
 			val fileList: List<MultipartBody.Part> = listOf(body)
-			mApi.upload(fileList).enqueue(object : Callback<String> {
-				override fun onResponse(call: Call<String>?, response: Response<String>?) {
+			mApi.upload(fileList).enqueue(object : Callback<List<String>> {
+				override fun onResponse(call: Call<List<String>>?, response: Response<List<String>>?) {
 					Timber.d("response received")
+					mMissingProducts = response?.body() ?: emptyList()
 				}
 
-				override fun onFailure(call: Call<String>?, t: Throwable?) {
-					Timber.e("response failed")
+				override fun onFailure(call: Call<List<String>>?, t: Throwable?) {
+					if (t != null) handleApiFailure(t)
+					else Timber.e("API really failed")
 				}
 			})
 		}

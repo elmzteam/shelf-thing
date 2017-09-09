@@ -18,19 +18,10 @@ import kotlinx.android.synthetic.main.fragment_home.*
  * create an instance of this fragment.
  */
 class HomeFragment : Fragment() {
-
-	// TODO: Rename and change types of parameters
-	private var mParam1: String? = null
-	private var mParam2: String? = null
-
 	private var mListener: OnFragmentInteractionListener? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		if (arguments != null) {
-			mParam1 = arguments.getString(ARG_PARAM1)
-			mParam2 = arguments.getString(ARG_PARAM2)
-		}
 	}
 
 	override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
@@ -95,13 +86,8 @@ class HomeFragment : Fragment() {
 		 * @return A new instance of fragment HomeFragment.
 		 */
 		// TODO: Rename and change types and number of parameters
-		fun newInstance(param1: String, param2: String): HomeFragment {
-			val fragment = HomeFragment()
-			val args = Bundle()
-			args.putString(ARG_PARAM1, param1)
-			args.putString(ARG_PARAM2, param2)
-			fragment.arguments = args
-			return fragment
+		fun newInstance(): HomeFragment {
+			return HomeFragment()
 		}
 	}
 }// Required empty public constructor

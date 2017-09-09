@@ -9,5 +9,5 @@ import retrofit2.http.Part
 interface Api {
 	@Multipart
 	@POST("/status")
-	fun upload(@Part bytes: List<MultipartBody.Part>): Call<String>
+	fun upload(@Part bytes: List<MultipartBody.Part>): Call<List<String>>
 }
