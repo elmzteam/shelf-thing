@@ -3,6 +3,7 @@ package com.elmz.shelfthing
 import android.Manifest.permission.*
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.ImageReader
 import android.media.ImageReader.OnImageAvailableListener
 import android.net.Uri
 import android.os.Bundle
@@ -52,7 +53,7 @@ import javax.inject.Inject
  *
  */
 class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListener,
-		StatusFragment.OnFragmentInteractionListener {
+		StatusFragment.OnFragmentInteractionListener, ImageReader.OnImageAvailableListener {
 	private val PERMISSION_REQUEST_CODE = 12
 	private lateinit var mInputMethodManager: InputMethodManager
 	private lateinit var mFragmentManager: FragmentManager
@@ -67,7 +68,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private lateinit var mApi: Api
 	private var mCameraHandler: Handler? = null
 	private var mCameraThread: HandlerThread? = null
-	private var mCamera: Camera? = null
+	private var cameraHandler: CameraHandler = CameraHandler.getInstance()
 	private var mMissingProducts: ArrayList<String> = ArrayList()
 
 	// Servos
@@ -126,7 +127,8 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	override fun onDestroy() {
 		super.onDestroy()
 		mCameraThread?.quitSafely()
-		mCamera?.shutDown()
+//		mCamera?.shutDown()
+		cameraHandler.shutDown()
 		shelfServo.destroy()
 		cameraServo.destroy()
 	}
@@ -255,18 +257,19 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 					// functionality that depends on this permission.
 					Timber.e("Permission denied")
 					mCameraThread?.quitSafely()
-					mCamera = null
+//					mCamera = null
 				}
 			}
 		}
 	}
 
 	private fun initialize() {
-		if (checkSelfPermission(CAMERA) == PackageManager.PERMISSION_GRANTED && mCamera == null) {
+		if (checkSelfPermission(CAMERA) == PackageManager.PERMISSION_GRANTED) {
 			mCameraThread = HandlerThread("CameraBackground")
 			mCameraThread!!.start()
 			mCameraHandler = Handler(mCameraThread!!.looper)
-			mCamera = Camera(this, mCameraHandler!!, mOnImageAvailableListener)
+//			mCamera = Camera(this, mCameraHandler!!, mOnImageAvailableListener)
+			cameraHandler.initializeCamera(this, mCameraHandler, this)
 		}
 		if (!android.provider.Settings.System.canWrite(this)) {
 			intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
@@ -366,12 +369,16 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 				shelfServo.moveToShelf(shelf, {
 					Timber.i("Starting sweep")
 					cameraServo.sweepShelf({
-						mCamera?.startTakingPicture()
+						cameraHandler.takePicture()
 					}, if (shelf + 1 == SHELF_COUNT) reset({ flushSavedPictures() }) else processShelf(shelf + 1))
 				})
 			}
 		}
 
 		processShelf(0)()
+	}
+
+	override fun onImageAvailable (reader: ImageReader) {
+		Timber.w("Here!")
 	}
 }
