@@ -44,7 +44,7 @@ class StatusAdapter(context: Context) : RecyclerView.Adapter<StatusAdapter.ViewH
 		mItems.clear()
 		mItems.addAll(items)
 		if (mItems.isEmpty()) {
-			mItems.add("No alerts!")
+			mItems.add("Awesome, you're fully stocked!")
 		}
 		if (oldCount > mItems.size) {
 			notifyItemRangeRemoved(mItems.size, oldCount - mItems.size)

@@ -23,9 +23,9 @@
 	<!-- TODO: Remove or change this placeholder text -->
 	<string name="hello_blank_fragment">Hello blank fragment</string>
 
+	<string name="alert_none">No Alerts</string>
 	<plurals name="alert_header">
-		<item quantity="zero">No Alerts</item>
-		<item quantity="one">%d Alert</item>
-		<item quantity="other">%d Alerts</item>
+		<item quantity="one">Alert</item>
+		<item quantity="other">Alerts</item>
 	</plurals>
 </resources>

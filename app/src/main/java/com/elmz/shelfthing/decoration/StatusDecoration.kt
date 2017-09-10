@@ -21,8 +21,8 @@ class StatusDecoration: RecyclerView.ItemDecoration() {
 			outRect.top = space
 		}
 
-		outRect.left = space
-		outRect.right = space
+//		outRect.left = space
+//		outRect.right = space
 		outRect.bottom = space
 	}
 }

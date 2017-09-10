@@ -44,8 +44,8 @@ class HomeFragment : Fragment() {
 
 	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
 		header_card.setOnClickListener { _ -> showInfo() }
-		header.text = resources.getQuantityString(R.plurals.alert_header, 0, 0)
 		right_card.setOnClickListener { _ -> onClickSettings() }
+		update(mMissingProducts)
 	}
 
 	fun showInfo() {
@@ -103,9 +103,14 @@ class HomeFragment : Fragment() {
 		mMissingProducts = missingProducts
 		if (mMissingProducts.isEmpty()) {
 			mMissingProducts.add("No alerts!")
+			header.text = resources.getString(R.string.alert_none)
+			header_card.setCardBackgroundColor(resources.getColor(R.color.blue_300))
+			header.setTextColor(resources.getColor(R.color.blue_900))
+		} else {
+			header.text = resources.getQuantityString(R.plurals.alert_header, mMissingProducts.size)
+			header_card.setCardBackgroundColor(resources.getColor(R.color.red_300))
+			header.setTextColor(resources.getColor(R.color.red_900))
 		}
-		header.text = resources.getQuantityString(R.plurals.alert_header,
-				mMissingProducts.size, mMissingProducts.size)
 	}
 
 	companion object {
