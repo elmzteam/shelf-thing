@@ -102,7 +102,7 @@ class HomeFragment : Fragment() {
 	fun update(missingProducts: ArrayList<String>) {
 		mMissingProducts = missingProducts
 		if (mMissingProducts.isEmpty()) {
-			mMissingProducts.add("No alerts!")
+			mMissingProducts.add("Awesome, you're fully stocked!")
 			header.text = resources.getString(R.string.alert_none)
 			header_card.setCardBackgroundColor(resources.getColor(R.color.blue_300))
 			header.setTextColor(resources.getColor(R.color.blue_900))

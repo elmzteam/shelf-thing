@@ -19,5 +19,5 @@
 		android:maxLines="1"
 		android:textSize="48sp"
 		android:includeFontPadding="false"
-		android:textColor="@color/grey_900"/>
+		android:textColor="@color/grey_800"/>
 </FrameLayout>
