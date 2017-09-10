@@ -19,10 +19,7 @@ import android.widget.Toast
 import com.elmz.shelfthing.fragment.HomeFragment
 import com.elmz.shelfthing.fragment.SettingsFragment
 import com.elmz.shelfthing.fragment.StatusFragment
-import com.elmz.shelfthing.util.Api
-import com.elmz.shelfthing.util.Camera
-import com.elmz.shelfthing.util.DrawerActivity
-import com.elmz.shelfthing.util.EnumUtil
+import com.elmz.shelfthing.util.*
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -73,6 +70,15 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private var mCamera: Camera? = null
 	private var mMissingProducts: ArrayList<String> = ArrayList()
 
+	// Servos
+	private val SHELF_COUNT = 2
+
+	private lateinit var shelfServo: ShelfServo
+	private lateinit var cameraServo: CameraServo
+
+	// Pictures
+	private var savedPictures: ArrayList<ByteArray> = ArrayList()
+
 	// Injected components
 	@Inject
 	lateinit var mRetrofit: Retrofit
@@ -96,6 +102,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			setDrawerIndicatorEnabled(count == 0)
 		}
 
+		shelfServo = ShelfServo("PWM2")
+		cameraServo = CameraServo("PWM1")
+
 		if (hasPermission()) {
 			initialize()
 		} else {
@@ -118,6 +127,8 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		super.onDestroy()
 		mCameraThread?.quitSafely()
 		mCamera?.shutDown()
+		shelfServo.destroy()
+		cameraServo.destroy()
 	}
 
 	override fun onSaveInstanceState(savedInstanceState: Bundle) {
@@ -290,7 +301,8 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	}
 
 	override fun onClickSettings() {
-		mCamera?.startTakingPicture()
+		Timber.i("Settings or smth")
+		scanPantry()
 	}
 
 	override fun onClickBack() {
@@ -313,21 +325,53 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private fun onPictureTaken(imageBytes: ByteArray?) {
 		if (imageBytes != null) {
 			Timber.i("Picture was taken")
-			val requestBody = RequestBody.create(MediaType.parse("application/octet-stream"), imageBytes)
-			val body = MultipartBody.Part.createFormData("pantry", "test", requestBody)
-			val fileList: List<MultipartBody.Part> = listOf(body)
-			mApi.upload(fileList).enqueue(object : Callback<List<String>> {
-				override fun onResponse(call: Call<List<String>>?, response: Response<List<String>>?) {
-					Timber.d("response received")
-					mMissingProducts = ArrayList(response?.body())
-					mHomeFragment?.update(mMissingProducts)
-				}
-
-				override fun onFailure(call: Call<List<String>>?, t: Throwable?) {
-					if (t != null) handleApiFailure(t)
-					else Timber.e("API really failed")
-				}
-			})
+			savedPictures.add(imageBytes)
 		}
+	}
+
+	private fun flushSavedPictures () {
+		if (savedPictures.size == 0) {
+			return
+		}
+
+		val fileList = savedPictures
+				.map { RequestBody.create(MediaType.parse("application/octet-stream"), it) }
+				.mapIndexed { index, body -> MultipartBody.Part.createFormData("pantry", index.toString(), body) }
+
+		mApi.upload(fileList).enqueue(object : Callback<List<String>> {
+			override fun onResponse(call: Call<List<String>>?, response: Response<List<String>>?) {
+				Timber.d("response received")
+				mMissingProducts = ArrayList(response?.body())
+				mHomeFragment?.update(mMissingProducts)
+			}
+
+			override fun onFailure(call: Call<List<String>>?, t: Throwable?) {
+				if (t != null) handleApiFailure(t)
+				else Timber.e("API really failed")
+			}
+		})
+
+		savedPictures = ArrayList()
+	}
+
+	private fun scanPantry() {
+		fun reset (callback: () -> Unit): () -> Unit {
+			return {
+				shelfServo.moveToShelf(0, callback)
+			}
+		}
+
+		fun processShelf (shelf: Int): () -> Unit {
+			return {
+				shelfServo.moveToShelf(shelf, {
+					Timber.i("Starting sweep")
+					cameraServo.sweepShelf({
+						mCamera?.startTakingPicture()
+					}, if (shelf + 1 == SHELF_COUNT) reset({ flushSavedPictures() }) else processShelf(shelf + 1))
+				})
+			}
+		}
+
+		processShelf(0)()
 	}
 }
