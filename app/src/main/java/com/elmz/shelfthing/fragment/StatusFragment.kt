@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.elmz.shelfthing.R
 import com.elmz.shelfthing.adapter.StatusAdapter
+import com.elmz.shelfthing.decoration.StatusDecoration
 import kotlinx.android.synthetic.main.fragment_status.*
 
 
@@ -45,11 +46,12 @@ class StatusFragment : Fragment() {
 	}
 
 	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+		list.addItemDecoration(StatusDecoration())
 		list.layoutManager = mLayoutManager
 		list.adapter = mAdapter
 	}
 
-	// TODO: Rename method, update argument and hook method into UI event
+	// TODO: bind to button
 	fun onClickBack() {
 		mListener?.onClickBack()
 	}
@@ -82,7 +84,6 @@ class StatusFragment : Fragment() {
 	}
 
 	companion object {
-		// TODO: Rename parameter arguments, choose names that match
 		// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 		private val ARG_MISSING_PRODUCTS = "param1"
 

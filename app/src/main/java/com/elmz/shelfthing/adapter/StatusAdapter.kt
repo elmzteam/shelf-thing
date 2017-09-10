@@ -43,6 +43,9 @@ class StatusAdapter(context: Context) : RecyclerView.Adapter<StatusAdapter.ViewH
 		val oldCount = mItems.size
 		mItems.clear()
 		mItems.addAll(items)
+		if (mItems.isEmpty()) {
+			mItems.add("No alerts!")
+		}
 		if (oldCount > mItems.size) {
 			notifyItemRangeRemoved(mItems.size, oldCount - mItems.size)
 			notifyItemRangeChanged(0, mItems.size)

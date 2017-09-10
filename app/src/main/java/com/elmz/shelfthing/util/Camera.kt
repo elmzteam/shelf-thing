@@ -9,7 +9,7 @@ import android.os.Handler
 import timber.log.Timber
 import java.util.*
 
-internal class Camera {
+internal class Camera(context: Context, backgroundHandler: Handler, imageAvailableListener: ImageReader.OnImageAvailableListener) {
 	// Image result processor
 	private var mImageReader: ImageReader? = null
 	// Active camera device connection
@@ -17,16 +17,21 @@ internal class Camera {
 	// Active camera capture session
 	private var mCaptureSession: CameraCaptureSession? = null
 
-	// Initialize a new camera device connection
-	fun initializeCamera(context: Context,
-	                     backgroundHandler: Handler,
-	                     imageAvailableListener: ImageReader.OnImageAvailableListener) {
+	private val mManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
+	private val mBackgroundHandler = backgroundHandler
+	private val mImageAvailableListener = imageAvailableListener
 
+	// Initialize a new camera device connection
+	fun startTakingPicture() {
+		if (mCameraDevice != null) {
+			Timber.e("Ugh")
+			mImageReader?.close()
+			mCameraDevice?.close()
+		}
 		// Discover the camera instance
-		val manager = context.getSystemService(CAMERA_SERVICE) as CameraManager
 		var camIds = arrayOf<String>()
 		try {
-			camIds = manager.cameraIdList
+			camIds = mManager.cameraIdList
 		} catch (e: CameraAccessException) {
 			Timber.e("Cam access exception getting IDs", e)
 		}
@@ -39,17 +44,15 @@ internal class Camera {
 		Timber.d("Using camera id %s", id)
 
 		// Initialize image processor
-		mImageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT,
-				ImageFormat.JPEG, MAX_IMAGES)
-		mImageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
+		mImageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, MAX_IMAGES)
+		mImageReader!!.setOnImageAvailableListener(mImageAvailableListener, mBackgroundHandler)
 
 		// Open the camera resource
 		try {
-			manager.openCamera(id, mStateCallback, backgroundHandler)
+			mManager.openCamera(id, mStateCallback, mBackgroundHandler)
 		} catch (cae: CameraAccessException) {
 			Timber.e("Camera access exception", cae)
 		}
-
 	}
 
 	// Close the camera resources
@@ -57,7 +60,7 @@ internal class Camera {
 		mCameraDevice?.close()
 	}
 
-	fun takePicture() {
+	private fun takePicture() {
 		if (mCameraDevice == null) {
 			Timber.w("Cannot capture image. Camera not initialized.")
 			return
@@ -92,10 +95,12 @@ internal class Camera {
 		override fun onOpened(cameraDevice: CameraDevice?) {
 			mCameraDevice = cameraDevice
 			Timber.d("Camera initialized: %s", cameraDevice != null)
+			takePicture()
 		}
 
 		override fun onDisconnected(cameraDevice: CameraDevice?) {
 			mCameraDevice = null
+			Timber.d("Camera disconnected")
 		}
 
 		override fun onError(cameraDevice: CameraDevice?, code: Int) {
@@ -112,22 +117,23 @@ internal class Camera {
 				mCaptureSession = null
 				Timber.v("CaptureSession closed")
 			}
+			mCameraDevice?.close()
+			mCameraDevice = null
 		}
 	}
 
 	// Callback handling session state changes
 	private val mSessionCallback = object : CameraCaptureSession.StateCallback() {
 		override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
-			Timber.v("Session configured")
 			// The camera is already closed
 			if (mCameraDevice == null) {
-				Timber.d("Camera closed")
+				Timber.d("Camera was already closed, aborting capture")
 				return
 			}
 
 			// When the session is ready, we start capture.
 			mCaptureSession = cameraCaptureSession
-			Timber.v("Triggering image capture")
+			Timber.v("Session configured, triggering image capture")
 			triggerImageCapture()
 		}
 
@@ -141,6 +147,6 @@ internal class Camera {
 		private val IMAGE_WIDTH = 2560
 		private val IMAGE_HEIGHT = 1920
 		// TODO: Not sure
-		private val MAX_IMAGES = 1
+		private val MAX_IMAGES = 3
 	}
 }

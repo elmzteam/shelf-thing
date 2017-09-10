@@ -255,8 +255,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			mCameraThread = HandlerThread("CameraBackground")
 			mCameraThread!!.start()
 			mCameraHandler = Handler(mCameraThread!!.looper)
-			mCamera = Camera()
-			mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+			mCamera = Camera(this, mCameraHandler!!, mOnImageAvailableListener)
 		}
 		if (!android.provider.Settings.System.canWrite(this)) {
 			intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
@@ -291,7 +290,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	}
 
 	override fun onClickSettings() {
-		mCamera?.takePicture()
+		mCamera?.startTakingPicture()
 	}
 
 	override fun onClickBack() {
@@ -306,14 +305,14 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		val imageBytes = ByteArray(imageBuf.remaining())
 		imageBuf.get(imageBytes)
 		image.close()
+		reader.close()
 
 		onPictureTaken(imageBytes)
 	}
 
 	private fun onPictureTaken(imageBytes: ByteArray?) {
 		if (imageBytes != null) {
-			// ...process the captured image...
-			Timber.i("taken")
+			Timber.i("Picture was taken")
 			val requestBody = RequestBody.create(MediaType.parse("application/octet-stream"), imageBytes)
 			val body = MultipartBody.Part.createFormData("pantry", "test", requestBody)
 			val fileList: List<MultipartBody.Part> = listOf(body)
@@ -321,7 +320,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 				override fun onResponse(call: Call<List<String>>?, response: Response<List<String>>?) {
 					Timber.d("response received")
 					mMissingProducts = ArrayList(response?.body())
-					mHomeFragment?.update(mMissingProducts.size)
+					mHomeFragment?.update(mMissingProducts)
 				}
 
 				override fun onFailure(call: Call<List<String>>?, t: Throwable?) {

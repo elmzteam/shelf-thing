@@ -2,11 +2,17 @@ package com.elmz.shelfthing.fragment
 
 import android.content.Context
 import android.os.Bundle
+import android.support.design.widget.BottomSheetBehavior
+import android.support.design.widget.BottomSheetDialog
 import android.support.v4.app.Fragment
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.elmz.shelfthing.R
+import com.elmz.shelfthing.adapter.StatusAdapter
+import com.elmz.shelfthing.decoration.StatusDecoration
 import kotlinx.android.synthetic.main.fragment_home.*
 
 /**
@@ -19,26 +25,46 @@ import kotlinx.android.synthetic.main.fragment_home.*
  */
 class HomeFragment : Fragment() {
 	private var mListener: OnFragmentInteractionListener? = null
-	private var numMissing = 0
+	private var mMissingProducts: ArrayList<String> = ArrayList()
+	private lateinit var mAdapter: StatusAdapter
+	private var mLayoutInflater: LayoutInflater? = null
+	private var mDialogBehavior: BottomSheetBehavior<*>? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		mAdapter = StatusAdapter(context)
 	}
 
 	override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
 							  savedInstanceState: Bundle?): View? {
+		mLayoutInflater = inflater
 		// Inflate the layout for this fragment
 		return inflater?.inflate(R.layout.fragment_home, container, false)
 	}
 
 	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-		header_card.setOnClickListener { _ -> onClickInfo() }
-		header.text = resources.getQuantityString(R.plurals.alert_header, numMissing, numMissing)
+		header_card.setOnClickListener { _ -> showInfo() }
+		header.text = resources.getQuantityString(R.plurals.alert_header, 0, 0)
 		right_card.setOnClickListener { _ -> onClickSettings() }
 	}
 
-	fun onClickInfo() {
-		mListener?.onClickInfo()
+	fun showInfo() {
+		val view = mLayoutInflater?.inflate(R.layout.sheet, null)
+		val recyclerView = view?.findViewById<RecyclerView>(R.id.list)
+//		recyclerView.setHasFixedSize(true);
+		recyclerView?.addItemDecoration(StatusDecoration())
+		recyclerView?.layoutManager = LinearLayoutManager(mLayoutInflater?.context)
+		mAdapter.update(mMissingProducts)
+		recyclerView?.adapter = mAdapter
+		val infoSheet = BottomSheetDialog(context)
+		infoSheet.setContentView(view)
+		mDialogBehavior = BottomSheetBehavior.from(view?.parent as View)
+		infoSheet.show()
+		mDialogBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
+	}
+
+	fun hideInfo() {
+		mDialogBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
 	}
 
 	fun onClickSettings() {
@@ -73,9 +99,13 @@ class HomeFragment : Fragment() {
 		fun onClickSettings()
 	}
 
-	fun update(missing: Int) {
-		numMissing = missing
-		header.text = resources.getQuantityString(R.plurals.alert_header, numMissing, numMissing)
+	fun update(missingProducts: ArrayList<String>) {
+		mMissingProducts = missingProducts
+		if (mMissingProducts.isEmpty()) {
+			mMissingProducts.add("No alerts!")
+		}
+		header.text = resources.getQuantityString(R.plurals.alert_header,
+				mMissingProducts.size, mMissingProducts.size)
 	}
 
 	companion object {
