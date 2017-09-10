@@ -86,6 +86,8 @@ public class CameraHandler {
 			manager.openCamera(id, mStateCallback, backgroundHandler);
 		} catch (CameraAccessException cae) {
 			Log.d(TAG, "Camera access exception", cae);
+			// Reset
+			this.initializeCamera(context, backgroundHandler, imageAvailableListener);
 		}
 	}
 	/**

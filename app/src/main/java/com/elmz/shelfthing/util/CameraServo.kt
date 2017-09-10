@@ -26,10 +26,10 @@ class CameraServo(gpioPin: String) {
 		servo.setEnabled(true)
 
 		val runnable = object : Runnable {
-			val ANGLE_STEP: Double = 60.0
+			val ANGLE_STEP: Double = 30.0
 			val STOP_ANGLE: Double = 60.0
-			val STEP_DELAY: Long = 100
-			val WAIT_DELAY: Long = 900
+			val STEP_DELAY: Long = 400
+			val WAIT_DELAY: Long = 1600
 			var angle: Double = -60.0
 
 			override fun run() {

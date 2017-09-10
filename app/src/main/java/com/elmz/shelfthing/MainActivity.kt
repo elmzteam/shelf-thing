@@ -30,6 +30,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 /**
@@ -126,9 +127,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 
 	override fun onDestroy() {
 		super.onDestroy()
-		mCameraThread?.quitSafely()
 //		mCamera?.shutDown()
 		cameraHandler.shutDown()
+		mCameraThread?.quitSafely()
 		shelfServo.destroy()
 		cameraServo.destroy()
 	}
@@ -312,19 +313,6 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		switchToFragment(Display.HOME)
 	}
 
-	// Callback to receive captured camera image data
-	private val mOnImageAvailableListener = OnImageAvailableListener { reader ->
-		// Get the raw image bytes
-		val image = reader.acquireLatestImage()
-		val imageBuf = image.planes[0].buffer
-		val imageBytes = ByteArray(imageBuf.remaining())
-		imageBuf.get(imageBytes)
-		image.close()
-		reader.close()
-
-		onPictureTaken(imageBytes)
-	}
-
 	private fun onPictureTaken(imageBytes: ByteArray?) {
 		if (imageBytes != null) {
 			Timber.i("Picture was taken")
@@ -370,7 +358,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 					Timber.i("Starting sweep")
 					cameraServo.sweepShelf({
 						cameraHandler.takePicture()
-					}, if (shelf + 1 == SHELF_COUNT) reset({ flushSavedPictures() }) else processShelf(shelf + 1))
+					}, {
+						if (shelf + 1 == SHELF_COUNT) reset({ flushSavedPictures() })() else processShelf(shelf + 1)()
+					})
 				})
 			}
 		}
@@ -379,6 +369,14 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	}
 
 	override fun onImageAvailable (reader: ImageReader) {
-		reader.acquireNextImage().
+		Timber.w("onImageAvailable")
+		val image = reader.acquireLatestImage()
+		val imageBuf = image.planes[0].buffer
+		val imageBytes = ByteArray(imageBuf.remaining())
+		imageBuf.get(imageBytes)
+		image.close()
+//		reader.close()
+
+		onPictureTaken(imageBytes)
 	}
 }

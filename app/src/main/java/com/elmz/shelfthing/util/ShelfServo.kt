@@ -29,20 +29,20 @@ class ShelfServo(gpioPin: String) {
 		Thread(Runnable {
 			run {
 				servo.setEnabled(true)
+				Log.i("ShelfServo", "Moving to shelf " + shelf)
 
-				// Move in one direction for a period of time
-				// Fake this by moving at +/- .25 for 1s
 				if (shelf < currentShelf) {
-					servo.angle = -.25
+					servo.angle = -.6
+					Thread.sleep(3000)
 				} else {
-					servo.angle = .25
+					servo.angle = .3
+					Thread.sleep(2000)
 				}
 
-				Log.i("ShelfServo", "Moving to shelf " + shelf)
-				Thread.sleep(1000)
 				Log.i("ShelfServo", "Done moving to shelf")
 				servo.setEnabled(false)
 				callback()
+				currentShelf = shelf
 			}
 		}).start()
 	}
