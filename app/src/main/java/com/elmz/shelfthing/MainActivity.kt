@@ -379,6 +379,6 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	}
 
 	override fun onImageAvailable (reader: ImageReader) {
-		Timber.w("Here!")
+		reader.acquireNextImage().
 	}
 }
