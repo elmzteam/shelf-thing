@@ -1,15 +1,19 @@
 package com.elmz.shelfthing
 
 import android.Manifest.permission.*
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.ImageReader.OnImageAvailableListener
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.provider.Settings
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.view.MenuItem
+import android.view.Surface
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import com.elmz.shelfthing.fragment.HomeFragment
@@ -28,7 +32,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import timber.log.Timber
-import java.io.File
 import javax.inject.Inject
 
 /**
@@ -68,7 +71,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 	private var mCameraHandler: Handler? = null
 	private var mCameraThread: HandlerThread? = null
 	private var mCamera: Camera? = null
-	private var mMissingProducts: List<String> = emptyList()
+	private var mMissingProducts: ArrayList<String> = ArrayList()
 
 	// Injected components
 	@Inject
@@ -94,11 +97,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		}
 
 		if (hasPermission()) {
-			mCameraThread = HandlerThread("CameraBackground")
-			mCameraThread!!.start()
-			mCameraHandler = Handler(mCameraThread!!.looper)
-			mCamera = Camera()
-			mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+			initialize()
 		} else {
 			requestPermission()
 		}
@@ -108,7 +107,9 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			switchToFragment(Display.HOME)
 		} else {
 			mActiveDisplay = EnumUtil.deserialize(Display::class.java).from(savedInstanceState)
-			mSettingsFragment = mFragmentManager.getFragment(savedInstanceState, Display.SETTINGS.name) as SettingsFragment
+			mHomeFragment = mFragmentManager.getFragment(savedInstanceState, Display.HOME.name) as HomeFragment?
+			mStatusFragment = mFragmentManager.getFragment(savedInstanceState, Display.STATUS.name) as StatusFragment?
+			mSettingsFragment = mFragmentManager.getFragment(savedInstanceState, Display.SETTINGS.name) as SettingsFragment?
 			switchToFragment(mActiveDisplay!!)
 		}
 	}
@@ -184,7 +185,7 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			}
 			Display.STATUS -> {
 				if (mStatusFragment == null) {
-					mStatusFragment = StatusFragment.newInstance(mMissingProducts as ArrayList<String>)
+					mStatusFragment = StatusFragment.newInstance(mMissingProducts)
 				}
 				mFragmentManager.beginTransaction()
 						.replace(R.id.container, mStatusFragment, display.name)
@@ -213,30 +214,21 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 		}
 	}
 
-	fun sendImage(filePath: String) {
-		val file = File(filePath)
-
-		val reqFile = RequestBody.create(MediaType.parse("image/*"), file)
-		val body = MultipartBody.Part.createFormData("upload", file.getName(), reqFile)
-		val name = RequestBody.create(MediaType.parse("text/plain"), "upload_test")
-
-//        mApi.postImage()
-	}
-
 	private fun hasPermission(): Boolean {
-		return checkSelfPermission(CAMERA) == PackageManager.PERMISSION_GRANTED
-				&& checkSelfPermission(INTERNET) == PackageManager.PERMISSION_GRANTED
-				&& checkSelfPermission(ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED
+		return arrayOf(CAMERA, INTERNET, ACCESS_NETWORK_STATE).none {
+			checkSelfPermission(it) == PackageManager.PERMISSION_DENIED }
 	}
 
 	private fun requestPermission() {
 		if (shouldShowRequestPermissionRationale(CAMERA)
 				|| shouldShowRequestPermissionRationale(INTERNET)
 				|| shouldShowRequestPermissionRationale(ACCESS_NETWORK_STATE)) {
-			Toast.makeText(this, "Camera and internet connectivity are " +
+			Toast.makeText(this, "Camera, settings, and internet connectivity are " +
 					"required for this application", Toast.LENGTH_LONG).show()
 		}
-		requestPermissions(arrayOf(CAMERA, INTERNET, ACCESS_NETWORK_STATE), PERMISSION_REQUEST_CODE)
+		arrayOf(CAMERA, INTERNET, ACCESS_NETWORK_STATE)
+				.filter { checkSelfPermission(it) == PackageManager.PERMISSION_DENIED }
+				.forEach { requestPermissions(arrayOf(it), PERMISSION_REQUEST_CODE) }
 	}
 
 	override fun onRequestPermissionsResult(requestCode: Int,
@@ -245,18 +237,42 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			PERMISSION_REQUEST_CODE -> {
 				// If request is cancelled, the result arrays are empty.
 				if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-					mCameraThread = HandlerThread("CameraBackground")
-					mCameraThread!!.start()
-					mCameraHandler = Handler(mCameraThread!!.looper)
-					mCamera = Camera()
-					mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+					initialize()
+					Timber.i("Permission granted")
 				} else {
 					// permission denied, boo! Disable the
 					// functionality that depends on this permission.
+					Timber.e("Permission denied")
+					mCameraThread?.quitSafely()
 					mCamera = null
 				}
 			}
 		}
+	}
+
+	private fun initialize() {
+		if (checkSelfPermission(CAMERA) == PackageManager.PERMISSION_GRANTED && mCamera == null) {
+			mCameraThread = HandlerThread("CameraBackground")
+			mCameraThread!!.start()
+			mCameraHandler = Handler(mCameraThread!!.looper)
+			mCamera = Camera()
+			mCamera?.initializeCamera(this, mCameraHandler!!, mOnImageAvailableListener)
+		}
+		if (!android.provider.Settings.System.canWrite(this)) {
+			intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+			intent.data = Uri.parse("package:" + packageName)
+			startActivity(intent)
+		}
+		Settings.System.putInt(
+				contentResolver,
+				Settings.System.ACCELEROMETER_ROTATION,
+				0
+		)
+		Settings.System.putInt(
+				contentResolver,
+				Settings.System.USER_ROTATION,
+				Surface.ROTATION_180
+		)
 	}
 
 	private fun handleApiFailure(t: Throwable) {
@@ -304,7 +320,8 @@ class MainActivity : DrawerActivity(), HomeFragment.OnFragmentInteractionListene
 			mApi.upload(fileList).enqueue(object : Callback<List<String>> {
 				override fun onResponse(call: Call<List<String>>?, response: Response<List<String>>?) {
 					Timber.d("response received")
-					mMissingProducts = response?.body() ?: emptyList()
+					mMissingProducts = ArrayList(response?.body())
+					mHomeFragment?.update(mMissingProducts.size)
 				}
 
 				override fun onFailure(call: Call<List<String>>?, t: Throwable?) {

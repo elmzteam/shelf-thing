@@ -3,10 +3,14 @@ package com.elmz.shelfthing.fragment
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.elmz.shelfthing.R
+import com.elmz.shelfthing.adapter.StatusAdapter
+import kotlinx.android.synthetic.main.fragment_status.*
+
 
 /**
  * A simple [Fragment] subclass.
@@ -19,11 +23,15 @@ import com.elmz.shelfthing.R
 class StatusFragment : Fragment() {
 	private lateinit var missingProducts: ArrayList<String>
 	private var mListener: OnFragmentInteractionListener? = null
+	private lateinit var mAdapter: StatusAdapter
+	private var mLayoutManager: LinearLayoutManager? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		mAdapter = StatusAdapter(context)
 		if (arguments != null) {
 			missingProducts = arguments.getStringArrayList(ARG_MISSING_PRODUCTS)
+			mAdapter.update(missingProducts)
 		} else {
 			throw IllegalArgumentException()
 		}
@@ -32,7 +40,13 @@ class StatusFragment : Fragment() {
 	override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
 							  savedInstanceState: Bundle?): View? {
 		// Inflate the layout for this fragment
-		return inflater?.inflate(R.layout.fragment_home, container, false)
+		mLayoutManager = LinearLayoutManager(inflater?.context)
+		return inflater?.inflate(R.layout.fragment_status, container, false)
+	}
+
+	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+		list.layoutManager = mLayoutManager
+		list.adapter = mAdapter
 	}
 
 	// TODO: Rename method, update argument and hook method into UI event

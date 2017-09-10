@@ -19,6 +19,7 @@ import kotlinx.android.synthetic.main.fragment_home.*
  */
 class HomeFragment : Fragment() {
 	private var mListener: OnFragmentInteractionListener? = null
+	private var numMissing = 0
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -32,6 +33,7 @@ class HomeFragment : Fragment() {
 
 	override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
 		header_card.setOnClickListener { _ -> onClickInfo() }
+		header.text = resources.getQuantityString(R.plurals.alert_header, numMissing, numMissing)
 		right_card.setOnClickListener { _ -> onClickSettings() }
 	}
 
@@ -71,12 +73,12 @@ class HomeFragment : Fragment() {
 		fun onClickSettings()
 	}
 
-	companion object {
-		// TODO: Rename parameter arguments, choose names that match
-		// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-		private val ARG_PARAM1 = "param1"
-		private val ARG_PARAM2 = "param2"
+	fun update(missing: Int) {
+		numMissing = missing
+		header.text = resources.getQuantityString(R.plurals.alert_header, numMissing, numMissing)
+	}
 
+	companion object {
 		/**
 		 * Use this factory method to create a new instance of
 		 * this fragment using the provided parameters.
